@@ -13,6 +13,7 @@
                   {{ form.uname.label }}
                   {{ form.uname(size=32) }}
 	       </p>
+	       <p>{{ form.submit() }}</p>
             </form>
             {% if error %}
                 <p class="error"><strong>Error:</strong> {{ error }}
