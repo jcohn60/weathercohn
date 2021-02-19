@@ -10,17 +10,18 @@
 </div>
     <form action="" method="post" novalidate>
         {{ form.hidden_tag() }}
-        <p>
-            {{ form.name.label }}
-            {{ form.name(size=32) }}
-	</p>
 	<p>
             {{ form.locale.label }}
             {{ form.locale(size=32) }}
         </p>
         <p>{{ form.submit() }}</p>
     </form>
-{#
-{{ wtf.quick_form(form) }}
-#}
+    {% if weather %} 
+    {%for city in weather %}
+        {%for a, b in city.items()%}
+	<span>Key: {{a}}, value: {{b}}</span><br />
+        {%endfor%}
+    {%endfor%}
+    {% endif %}
+    {{ weather.city }}
 {% endblock %}
