@@ -6,14 +6,16 @@ from flask import Flask, render_template, session, redirect, url_for
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
+from wtforms import StringField, IntegerField, SubmitField
 from wtforms.validators import DataRequired
-#from wtforms.validators import NumberRange
+from wtforms.validators import InputRequired
+from wtforms.validators import NumberRange
 from flask_sqlalchemy import SQLAlchemy
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
+#I am guessing this should be a little more cryptic
 app.config['SECRET_KEY'] = 'Weather Is Always Good For Lacrosse'
 app.config['SQLALCHEMY_DATABASE_URI'] =\
         'sqlite:///' + os.path.join(basedir, 'data.sqlite')
@@ -43,12 +45,12 @@ class City(db.Model):
 
 #define the two forms used
 class LoginForm(FlaskForm):
-    uname = StringField('UserName ', validators=[DataRequired()])
+    uname = StringField('UserName ', validators=[InputRequired()])
     submit = SubmitField('Submit')
 
 class NameForm(FlaskForm):
-    locale = StringField('Where is today''s game (zip code) ? ', validators=[DataRequired()])
-    submit = SubmitField('Submit')
+    locale = IntegerField('Enter a Game Location By Zip: ', validators=[NumberRange(min=0, max=99999, message='Enter Valid Zip Code')])
+    submit = SubmitField('Update')
 
 #function to aid SQLalchemy database initialization
 @app.shell_context_processor
@@ -59,11 +61,9 @@ def make_shell_context():
 def page_not_found(e):
     return render_template('404.html'), 404
 
-
 @app.errorhandler(500)
 def internal_server_error(e):
    return render_template('500.html'), 500
-
 
 @app.route('/clear')
 def clear():
@@ -88,24 +88,23 @@ def logout():
 def login():
     form = LoginForm()
     error = None
+    if form.uname.data =='':
+        error = 'Invalid user Name. Please try again.'
     if form.validate_on_submit():
-        if form.uname.data == '': 
-            error = 'Invalid Credentials. Please try again.'
-        else:
-            # look for user in user table and add if not found
+        user = User.query.filter_by(username=form.uname.data).first()
+
+        if user is None:
+            new_user = User(username=form.uname.data)
+            db.session.add(new_user)
+            db.session.commit()
+
+            #requery to get handle on new object to access id
             user = User.query.filter_by(username=form.uname.data).first()
 
-            if user is None:
-                new_user = User(username=form.uname.data)
-                db.session.add(new_user)
-                db.session.commit()
-
-                #requery to get handle on new object to access id
-                user = User.query.filter_by(username=form.uname.data).first()
-
-            session['uid'] = user.id
-            session['name'] = form.uname.data
-            return redirect(url_for('index'))
+        #set session variables for this user
+        session['uid'] = user.id
+        session['name'] = form.uname.data
+        return redirect(url_for('index'))
     return render_template('login.html', form=form, error=error)
 
 @app.route('/', methods=['GET', 'POST'])
@@ -131,8 +130,6 @@ def index():
         weather_list.append( get_weather( city ))
 
     session['weather'] = weather_list
-    #print(weather_list) 
-    #sys.stdout.flush()
 
     #if found make sure that session locale has their saved locations
     dupe = False
@@ -154,7 +151,6 @@ def index():
         return redirect(url_for('index'))
 
     return render_template('index.html', form=form, name=session.get('name'), weather=session.get('weather'))
-    #return render_template('index.html', form=form, name=session.get('name'), locale=session.get('locale'), weather=session.get('weather'))
 
 #get weather in json format from my free account at openweathermap.org
 def get_weather( city ):

@@ -5,18 +5,21 @@
 
 {% block page_content %}
 <div class="container">
-            <h1>Please login</h1>
-            <br>
-            <form action="" method="post" novalidate>
-               {{ form.hidden_tag() }}
-               <p>
-                  {{ form.uname.label }}
-                  {{ form.uname(size=32) }}
-	       </p>
-	       <p>{{ form.submit() }}</p>
-            </form>
-            {% if error %}
-                <p class="error"><strong>Error:</strong> {{ error }}
-            {% endif %}
-         </div>
+    <h1>Please login</h1>
+    <br>
+    {% for field in form.errors %}
+    {% for error in form.errors[field] %}
+        <div class="error">{{ error }}</div>
+    {% endfor %}
+    {% endfor %}
+    <form action="" method="post" novalidate>
+       {{ form.hidden_tag() }}
+       {{ form.csrf_token }}
+       <p>
+          {{ form.uname.label }}
+          {{ form.uname(size=32) }}
+       </p>
+       <p>{{ form.submit() }}</p>
+    </form>
+</div>
 {% endblock %}

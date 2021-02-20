@@ -8,8 +8,14 @@
     <h1>Hello, {% if name %}{{ name }}{% else %}Stranger{% endif %}!</h1>
     {# <h2>Weather for {{ locale }}</h2> #}
 </div>
+    {% for field in form.errors %}
+       {% for error in form.errors[field] %}
+          <div class="error">{{ error }}</div>
+       {% endfor %}
+    {% endfor %}
     <form action="" method="post" novalidate>
         {{ form.hidden_tag() }}
+	{{ form.csrf_token }}
 	<p>
             {{ form.locale.label }}
             {{ form.locale(size=32) }}
@@ -17,11 +23,10 @@
         <p>{{ form.submit() }}</p>
     </form>
     {% if weather %} 
-    {%for city in weather %}
-        {%for a, b in city.items()%}
-	<span>Key: {{a}}, value: {{b}}</span><br />
+        {%for city in weather %}
+            {%for a, b in city.items()%}
+	        <span>Key: {{a}}, value: {{b}}</span><br />
+            {%endfor%}
         {%endfor%}
-    {%endfor%}
     {% endif %}
-    {{ weather.city }}
 {% endblock %}
