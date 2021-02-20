@@ -12,6 +12,10 @@
           <div class="error">{{ error }}</div>
        {% endfor %}
     {% endfor %}
+    {% if ziperror %}
+        {{ ziperror }}
+    {% endif %}
+
     <form action="" method="post" novalidate>
         {{ form.hidden_tag() }}
 	{{ form.csrf_token }}

@@ -49,8 +49,8 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Submit')
 
 class NameForm(FlaskForm):
-    locale = IntegerField('Enter a Game Location By Zip: ')
-    #locale = IntegerField('Enter a Game Location By Zip: ', validators=[NumberRange(min=0, max=99999, message='Enter Valid Zip Code')])
+    #locale = IntegerField('Enter a Game Location By Zip: ')
+    locale = IntegerField('Enter a Game Location By Zip: ', validators=[NumberRange(min=0, max=99999, message='Enter Valid Zip Code')])
     submit = SubmitField('Add')
 
 #function to aid SQLalchemy database initialization
@@ -112,6 +112,7 @@ def login():
 def index():
     name = None
     form = NameForm()
+    error = ''
     data = 'None'
     weather_list = []
     city_list = []
@@ -126,8 +127,10 @@ def index():
         city_list.append(str(db_city.zip))
 
     #loop over cities and call function to get current weather for display
-    for city in city_list:                    
-        weather_list.append( get_weather( city ))
+    for city in city_list:
+        result = get_weather( city )
+        if result != -1:
+            weather_list.append( result )
 
     #Update database with new locations
     dupe = False
@@ -135,36 +138,49 @@ def index():
         #loop over favorites and watch for duplication
         for city in city_list:
             if str(form.locale.data) == str(city):
-               dupe = True
+                dupe = True
+                error = 'Duplicate Zip Code. Please try again.'
 
         if not dupe:
-            #insert into database 
-            new_city = City(zip=form.locale.data, user_id=session['uid'])
-            db.session.add(new_city)
-            db.session.commit()
+            #insert into database using call to weather app to ensure we can get data for this zip
+            result = get_weather( str(form.locale.data) )
+            if result != -1:
+                new_city = City(zip=form.locale.data, user_id=session['uid'])
+                db.session.add(new_city)
+                db.session.commit()
+                return redirect(url_for('index'))
+            else:
+                error = 'Invalid Zip Code. Please try again.'
 
-        return redirect(url_for('index'))
-
-    return render_template('index.html', form=form, name=session.get('name'), weather=weather_list)
+    return render_template('index.html', form=form, name=session.get('name'), weather=weather_list, ziperror=error)
 
 #get weather in json format from my free account at openweathermap.org
+#this site returns a 404 error if you send a zip code that is not valid
 def get_weather( city ):
     api = '9e74cb4e236f9b0ffe42ab2e22d30d62'
 
-    # source contains json data from api
-    source = urllib.request.urlopen('http://api.openweathermap.org/data/2.5/weather?zip=' + city + '&units=imperial&appid=' + api).read()
+    try:
+        # source contains json data from api
+        source = urllib.request.urlopen('http://api.openweathermap.org/data/2.5/weather?zip=' + city + '&units=imperial&appid=' + api).read()
 
-    # converting JSON data to a dictionary
-    list_of_data = json.loads(source)
+        #print(source)
+        #sys.stdout.flush()
 
-    # data for variable list_of_data to return
-    data = {
-        "city": str(list_of_data['name']),
-        "temp": str(list_of_data['main']['temp']),
-        "windchill": str(list_of_data['main']['feels_like']),
-        "pressure": str(list_of_data['main']['pressure']),
-        "humidity": str(list_of_data['main']['humidity']),
-        "skies": str(list_of_data['weather'][0]['description']),
-    }
+        # converting JSON data to a dictionary
+        list_of_data = json.loads(source)
 
-    return data
+        # data for variable list_of_data to return
+        data = {
+            "city": str(list_of_data['name']),
+            "temp": str(list_of_data['main']['temp']),
+            "windchill": str(list_of_data['main']['feels_like']),
+            "pressure": str(list_of_data['main']['pressure']),
+            "humidity": str(list_of_data['main']['humidity']),
+            "skies": str(list_of_data['weather'][0]['description']),
+        }
+        return data
+
+    except urllib.request.HTTPError as exception:
+        print(exception)
+        sys.stdout.flush()
+        return -1 
