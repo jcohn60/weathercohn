@@ -49,8 +49,9 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Submit')
 
 class NameForm(FlaskForm):
-    locale = IntegerField('Enter a Game Location By Zip: ', validators=[NumberRange(min=0, max=99999, message='Enter Valid Zip Code')])
-    submit = SubmitField('Update')
+    locale = IntegerField('Enter a Game Location By Zip: ')
+    #locale = IntegerField('Enter a Game Location By Zip: ', validators=[NumberRange(min=0, max=99999, message='Enter Valid Zip Code')])
+    submit = SubmitField('Add')
 
 #function to aid SQLalchemy database initialization
 @app.shell_context_processor
@@ -67,7 +68,6 @@ def internal_server_error(e):
 
 @app.route('/clear')
 def clear():
-    session['weather'] = ''
     #delete this user's favorites
     City.query.filter_by(user_id=session['uid']).delete()
     db.session.commit()
@@ -77,8 +77,6 @@ def clear():
 def logout():
     session['name'] = ''
     session['uid'] = ''
-    #session['locale'] = ''
-    session['weather'] = ''
     return redirect(url_for('login'))
 
 # Route for handling the login page logic
@@ -90,6 +88,8 @@ def login():
     error = None
     if form.uname.data =='':
         error = 'Invalid user Name. Please try again.'
+
+    #Add new user if not already in the users table
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.uname.data).first()
 
@@ -98,7 +98,7 @@ def login():
             db.session.add(new_user)
             db.session.commit()
 
-            #requery to get handle on new object to access id
+            #requery to get handle on new user to access id
             user = User.query.filter_by(username=form.uname.data).first()
 
         #set session variables for this user
@@ -107,6 +107,7 @@ def login():
         return redirect(url_for('index'))
     return render_template('login.html', form=form, error=error)
 
+#route for the main weather display
 @app.route('/', methods=['GET', 'POST'])
 def index():
     name = None
@@ -115,31 +116,25 @@ def index():
     weather_list = []
     city_list = []
 
-    #make sure we have a user name to hit database
-    if session['name'] == '':
+    #make sure we have a user to hit database
+    if session['uid'] == '':
         return redirect(url_for('login'))
 
     #look for user location favorites in the database
     cityResult = City.query.filter_by(user_id=session['uid']).all()
     for db_city in cityResult:
-        print(db_city.zip)
-        sys.stdout.flush()
         city_list.append(str(db_city.zip))
 
+    #loop over cities and call function to get current weather for display
     for city in city_list:                    
         weather_list.append( get_weather( city ))
 
-    session['weather'] = weather_list
-
-    #if found make sure that session locale has their saved locations
+    #Update database with new locations
     dupe = False
-
     if form.validate_on_submit():
         #loop over favorites and watch for duplication
         for city in city_list:
-           print(city)
-           sys.stdout.flush()
-           if form.locale.data == city:
+            if str(form.locale.data) == str(city):
                dupe = True
 
         if not dupe:
@@ -150,26 +145,26 @@ def index():
 
         return redirect(url_for('index'))
 
-    return render_template('index.html', form=form, name=session.get('name'), weather=session.get('weather'))
+    return render_template('index.html', form=form, name=session.get('name'), weather=weather_list)
 
 #get weather in json format from my free account at openweathermap.org
 def get_weather( city ):
     api = '9e74cb4e236f9b0ffe42ab2e22d30d62'
 
-    # source contain json data from api
-    source = urllib.request.urlopen('http://api.openweathermap.org/data/2.5/weather?zip=' + city + '&appid=' + api).read()
+    # source contains json data from api
+    source = urllib.request.urlopen('http://api.openweathermap.org/data/2.5/weather?zip=' + city + '&units=imperial&appid=' + api).read()
 
     # converting JSON data to a dictionary
     list_of_data = json.loads(source)
 
-    # data for variable list_of_data
+    # data for variable list_of_data to return
     data = {
         "city": str(list_of_data['name']),
-        "coordinate": str(list_of_data['coord']['lon']) + ' '
-                 + str(list_of_data['coord']['lat']),
-        "temp": str(list_of_data['main']['temp']) + 'k',
+        "temp": str(list_of_data['main']['temp']),
+        "windchill": str(list_of_data['main']['feels_like']),
         "pressure": str(list_of_data['main']['pressure']),
         "humidity": str(list_of_data['main']['humidity']),
+        "skies": str(list_of_data['weather'][0]['description']),
     }
 
     return data

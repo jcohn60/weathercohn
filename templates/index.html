@@ -5,8 +5,7 @@
 
 {% block page_content %}
 <div class="page-header">
-    <h1>Hello, {% if name %}{{ name }}{% else %}Stranger{% endif %}!</h1>
-    {# <h2>Weather for {{ locale }}</h2> #}
+    <h1>Hello {% if name %}{{ name }}{% endif %}!</h1>
 </div>
     {% for field in form.errors %}
        {% for error in form.errors[field] %}
@@ -19,14 +18,17 @@
 	<p>
             {{ form.locale.label }}
             {{ form.locale(size=32) }}
-        </p>
-        <p>{{ form.submit() }}</p>
+            {{ form.submit() }}</p>
     </form>
     {% if weather %} 
+        <table>
+	<tr><th>Current Weather</th></tr>
         {%for city in weather %}
-            {%for a, b in city.items()%}
-	        <span>Key: {{a}}, value: {{b}}</span><br />
-            {%endfor%}
-        {%endfor%}
+	<tr>
+	    <td>{{city['city']}} Temp: {{city['temp']}} Wind Chill: {{city['windchill']}}
+            Pressure: {{city['pressure']}} Sky Conditions: {{city['skies']}}</td>
+	</tr><tr><td>&nbsp</td></tr>
+	{%endfor%}
+	</table>
     {% endif %}
 {% endblock %}
