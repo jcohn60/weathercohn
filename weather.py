@@ -15,12 +15,12 @@ from flask_sqlalchemy import SQLAlchemy
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
-#I am guessing this should be a little more cryptic
 app.config['SECRET_KEY'] = 'Weather Is Always Good For Lacrosse'
 app.config['SQLALCHEMY_DATABASE_URI'] =\
         'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+#initialize the flask add ons
 bootstrap = Bootstrap(app)
 moment = Moment(app)
 db = SQLAlchemy(app)
@@ -49,7 +49,6 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Submit')
 
 class NameForm(FlaskForm):
-    #locale = IntegerField('Enter a Game Location By Zip: ')
     locale = IntegerField('Enter a Game Location By Zip: ', validators=[NumberRange(min=0, max=99999, message='Enter Valid Zip Code')])
     submit = SubmitField('Add')
 
@@ -73,6 +72,7 @@ def clear():
     db.session.commit()
     return redirect(url_for('index'))
 
+# log the user out, reset session variables and return to login page
 @app.route('/logout')
 def logout():
     session['name'] = ''
