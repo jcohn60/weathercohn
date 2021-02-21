@@ -156,8 +156,9 @@ def index():
 
 #get weather in json format from my free account at openweathermap.org
 #this site returns a 404 error if you send a zip code that is not valid
+#WEATHER_KEY is the API user's client key
 def get_weather( city ):
-    api = '9e74cb4e236f9b0ffe42ab2e22d30d62'
+    api = os.getenv('WEATHER_KEY')
 
     try:
         # source contains json data from api
