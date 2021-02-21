@@ -19,6 +19,7 @@ I am a big lacrosse fan as a result of my son playing and coaching over the last
 I built my solution using Flask and python because I had already been doing some work with Flask to expand my skills in a different web development framework. So I already had the basic environment running in a Ubuntu bash shell on my Windows10 desktop.
 
 Below is the ouput from pip freeze which shows all installed packages in my flask environment;
+
 click==7.1.2
 dominate==2.6.0
 Flask==1.1.2
@@ -37,8 +38,11 @@ WTForms==2.3.3
 I did a little research on weather api options for getting weather data and settled on openweathermap.org. I set up a free account and figured out how to access the data and decipher the json return. The API requires a key from your openweathermap accounti. This key should be exported to WEATHER_KEY in the environment where flask is running.
 
 I used the SQLAlchemy library from flask to setup a very simple database in SQLite. I also installed Flask shell to allow interacting with the SQLite database from a command line. The database also needed to be initialized with table definitions prior to use.  Flask and SQLAlchemy had some utilities to support this. To init the database I ran the following while logged in to flask shell:
->>>from weather.py import db
->>>db.create_all()
+
+from weather.py import db
+
+db.create_all()
+
 I was reading the documentation for SQLAlchemy and it does provide some built in features that provide security against some web attack methods such as sql injection. I feel like I would have some more work to do to harden the interface against other types of attacks which will require more research and learning on my part.
 
 The templates are developed using Jinja2.
